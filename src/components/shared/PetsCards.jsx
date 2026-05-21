@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
+import Image from 'next/image';
 
 const PetCard = ({ pet }) => {
   return (
@@ -8,7 +9,7 @@ const PetCard = ({ pet }) => {
       
       {/* Image Block */}
       <div className="relative h-48 w-full bg-gray-200">
-        <img 
+        <Image
           src={pet.imageUrl} 
           alt={pet.petName} 
           className="w-full h-full object-cover"
@@ -19,7 +20,7 @@ const PetCard = ({ pet }) => {
       </div>
 
       {/* Info Block */}
-      <div className="p-5 flex-grow">
+      <div className="p-5 grow">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-xl font-bold text-gray-900">{pet.petName}</h3>
           <span className="text-lg font-bold text-emerald-600">${pet.adoptionFee}</span>

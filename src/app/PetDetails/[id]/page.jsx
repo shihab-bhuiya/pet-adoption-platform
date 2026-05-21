@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { MapPin, DollarSign, Calendar, Heart, ShieldAlert, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
-import Image from 'next/image';
 
 const PetDetailsPage = () => {
   const { id } = useParams();
@@ -101,7 +100,7 @@ const PetDetailsPage = () => {
         
         {/* Left Side: Image Gallery Element */}
         <div className="w-full h-[400px] md:h-[500px] rounded-xl overflow-hidden bg-gray-100">
-          <Image 
+          <img 
             src={pet.imageUrl} 
             alt={pet.petName} 
             className="w-full h-full object-cover"
