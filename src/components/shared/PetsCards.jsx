@@ -43,7 +43,7 @@ const PetCard = ({ pet }) => {
       {/* View Details Action */}
       <div className="p-5 pt-0">
         <Link 
-          href={`/PetDetails/${pet._id}`} 
+          href={`/AllPets/${pet._id}`} 
           className="block text-center bg-amber-500 hover:bg-amber-600 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200"
         >
           View Details

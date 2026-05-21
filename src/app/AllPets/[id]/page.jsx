@@ -8,10 +8,7 @@ import { Heart, Calendar, MapPin, Info, ArrowLeft, Send } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 const PetDetailsPage = () => {
-  const params = useParams();
-  // Safely grab the id parameter regardless of routing key capitalization casing
-  const id = params?.id || Object.values(params)[0]; 
-  
+  const { id } = useParams();
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -19,33 +16,27 @@ const PetDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Application input field states
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [submitLoading, setSubmitLoading] = useState(false);
 
   const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+  // Fetch individual pet data on page boot
   useEffect(() => {
     const fetchPetDetails = async () => {
-      if (!id || id === "undefined") {
-        console.error("Router error: ID parameter is missing from the URL path structure.");
-        setLoading(false);
-        return;
-      }
-
       try {
-        console.log(`Fetching data from: ${baseURL}/api/pets/${id}`);
         const response = await axios.get(`${baseURL}/api/pets/${id}`);
         setPet(response.data);
       } catch (error) {
-        console.error("Error retrieving pet record from backend API:", error);
+        console.error("Error retrieving pet record:", error);
         toast.error("Could not locate this animal profile.");
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchPetDetails();
+    if (id) fetchPetDetails();
   }, [id, baseURL]);
 
   const handleOpenModal = () => {
@@ -64,7 +55,7 @@ const PetDetailsPage = () => {
     const applicationPayload = {
       petId: pet._id,
       petName: pet.petName,
-      petImage: pet.imageUrl || pet.petImage,
+      petImage: pet.imageUrl || pet.petImage, // Safely reads either naming structure
       userEmail: session.user.email,
       userName: session.user.name,
       userPhone: phone,
@@ -77,10 +68,10 @@ const PetDetailsPage = () => {
       await axios.post(`${baseURL}/api/adoption-requests`, applicationPayload);
       toast.success(`Application for ${pet.petName} submitted successfully!`);
       setIsModalOpen(false);
-      router.push('/my-request');
+      router.push('/MyRequests'); // Routes user straight to their request status board
     } catch (error) {
-      console.error("Submission error:", error);
-      toast.error("Failed to submit form.");
+      console.error("Submission application intercept failure:", error);
+      toast.error("Failed to log adoption form. Please try again.");
     } finally {
       setSubmitLoading(false);
     }
@@ -98,8 +89,7 @@ const PetDetailsPage = () => {
     return (
       <div className="text-center py-20">
         <p className="text-gray-500 text-lg font-medium">Pet companion profile not found.</p>
-        <p className="text-xs text-gray-400 mt-1">Debug Info - Current Route ID: Value is "{String  (id)}"</p>
-        <button onClick={() => router.push('/AllPets')} className="mt-4 bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">
+        <button onClick={() => router.push('/AllPets')} className="mt-4 text-amber-500 font-bold hover:underline">
           Return to Animal Grid
         </button>
       </div>
@@ -115,6 +105,7 @@ const PetDetailsPage = () => {
       </button>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm">
+        {/* Profile Image Box */}
         <div className="relative h-[400px] w-full bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shadow-inner">
           <img 
             src={pet.imageUrl || pet.petImage} 
@@ -123,6 +114,7 @@ const PetDetailsPage = () => {
           />
         </div>
 
+        {/* Profile Meta Area */}
         <div className="flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -136,7 +128,7 @@ const PetDetailsPage = () => {
               <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 flex items-center gap-2.5">
                 <Calendar className="h-4 w-4 text-amber-500" />
                 <div>
-                  <p className="text-xs text-gray-400 font-medium">Age</p>
+                  <p className="text-xs text-gray-400 font-medium">Age Parameter</p>
                   <p className="text-sm font-bold text-gray-700">{pet.age}</p>
                 </div>
               </div>
@@ -144,7 +136,7 @@ const PetDetailsPage = () => {
                 <MapPin className="h-4 w-4 text-amber-500" />
                 <div>
                   <p className="text-xs text-gray-400 font-medium">Location</p>
-                  <p className="text-sm font-bold text-gray-700">{pet.location || 'Shelter'}</p>
+                  <p className="text-sm font-bold text-gray-700">{pet.location || 'Shelter Headquarters'}</p>
                 </div>
               </div>
             </div>
@@ -175,11 +167,14 @@ const PetDetailsPage = () => {
         </div>
       </div>
 
+      {/* ========================================== */}
+      {/* ADOPTION REQUEST MODAL DIALOG              */}
+      {/* ========================================== */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white max-w-md w-full rounded-2xl p-6 shadow-xl border border-gray-100 relative">
+          <div className="bg-white max-w-md w-full rounded-2xl p-6 shadow-xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-150">
             <h2 className="text-xl font-bold text-gray-900 mb-1">Adoption Request Form</h2>
-            <p className="text-xs text-gray-400 mb-5">Applying for <span className="font-semibold text-amber-500">{pet.petName}</span></p>
+            <p className="text-xs text-gray-400 mb-5">Applying for family matching with <span className="font-semibold text-amber-500">{pet.petName}</span></p>
 
             <form onSubmit={handleApplicationSubmit} className="space-y-4">
               <div>
@@ -196,14 +191,14 @@ const PetDetailsPage = () => {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Physical Living Address</label>
-                <textarea required rows="3" placeholder="Enter your full home address" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none" />
+                <textarea required rows="3" placeholder="Enter your full physical home address" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none" />
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="w-1/2 border border-gray-200 text-gray-600 font-medium py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
-                <button type="submit" disabled={submitLoading} className="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                <button type="submit" disabled={submitLoading} className="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50">
                   {submitLoading ? (
                     <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
                   ) : (
