@@ -111,7 +111,7 @@ const LoginPage = () => {
         {/* Footer Redirect Pathway Component */}
         <p className="text-center text-sm text-gray-500 mt-6">
           New to the platform?{' '}
-          <Link href="/register" className="text-amber-500 hover:underline font-medium">
+          <Link href="/registation" className="text-amber-500 hover:underline font-medium">
             Create an account
           </Link>
         </p>

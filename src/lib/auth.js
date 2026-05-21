@@ -12,6 +12,10 @@ const auth = betterAuth({
     emailAndPassword: {
         enabled: true // Enables standard signup/login with email + password
     },
+      emailAndPassword: { 
+    enabled: true, 
+  }, 
+
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID || "",

@@ -20,26 +20,43 @@ const RegisterPage = () => {
 
     try {
       // Execute Better Auth signup transaction
-      const response = await signUp.email({
+      await signUp.email({
         email: email,
         password: password,
         name: name,
-        callbackURL: '/' // Redirect home upon flawless account creation
+        callbackURL: '/' 
+      }, {
+        // Prevents Better Auth from instantly executing window relocation before toast displays
+        onRequest: () => {
+          setLoading(true);
+        },
+        onSuccess: () => {
+          toast.success("Account created successfully! Welcome to the pack.");
+          setName('');
+          setEmail('');
+          setPassword('');
+          // Delays routing slightly so the user can read the success toast notification
+          setTimeout(() => {
+            router.push('/login');
+          }, 1500);
+        },
+        onError: (ctx) => {
+          toast.error(ctx.error.message || "Failed to create account. Please try again.");
+          setLoading(false);
+        }
       });
 
-      toast.success("Account created successfully! Welcome to the pack.");
-      router.push('/login');
     } catch (error) {
-      console.error("Registration error:", error);
-      toast.error(error.message || "Failed to create account. Please try again.");
-    } finally {
+      console.error("Registration pipeline error:", error);
+      toast.error("An unexpected error occurred during profile registration.");
       setLoading(false);
     }
   };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center bg-gray-50/50 px-4 py-12">
-      <Toaster />
+      <Toaster position="top-center" reverseOrder={false} />
+      
       <div className="max-w-md w-full bg-white border border-gray-100 rounded-2xl p-8 shadow-sm">
         
         {/* Brand Header */}
@@ -53,10 +70,11 @@ const RegisterPage = () => {
 
         {/* Signup Form */}
         <form onSubmit={handleRegister} className="space-y-5">
+          {/* Input field: Name */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Full Name</label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center定位 left-3 text-gray-400">
+              <span className="absolute inset-y-0 left-0 flex items-center left-3 text-gray-400">
                 <User className="h-4 w-4" />
               </span>
               <input 
@@ -65,11 +83,12 @@ const RegisterPage = () => {
                 placeholder="Shihab Bhuiya"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-shadow"
               />
             </div>
           </div>
 
+          {/* Input field: Email */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Email Address</label>
             <div className="relative">
@@ -82,11 +101,12 @@ const RegisterPage = () => {
                 placeholder="shihab@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-shadow"
               />
             </div>
           </div>
 
+          {/* Input field: Password */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Password</label>
             <div className="relative">
@@ -96,14 +116,16 @@ const RegisterPage = () => {
               <input 
                 type="password" 
                 required
+                minLength={6}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-shadow"
               />
             </div>
           </div>
 
+          {/* Submit Registration Button */}
           <button 
             type="submit"
             disabled={loading}
@@ -117,6 +139,7 @@ const RegisterPage = () => {
           </button>
         </form>
 
+        {/* Sign In Navigation Link Redirect */}
         <p className="text-center text-sm text-gray-500 mt-6">
           Already have an account?{' '}
           <Link href="/login" className="text-amber-500 hover:underline font-medium">
