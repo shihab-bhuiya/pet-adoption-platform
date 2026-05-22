@@ -1,217 +1,143 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect, useState, use } from 'react';
 import { useSession } from '@/lib/auth-client';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { Heart, Calendar, MapPin, Info, ArrowLeft, Send } from 'lucide-react';
+import { ShieldAlert, MapPin, Calendar, MessageSquare, Heart } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
-const PetDetailsPage = () => {
-  const params = useParams();
-  // Safely grab the id parameter regardless of routing key capitalization casing
-  const id = params?.id || Object.values(params)[0]; 
-  
+const PetDetailsPage = ({ params }) => {
+  const resolvedParams = use(params);
+  const petId = resolvedParams.id;
   const router = useRouter();
-  const { data: session } = useSession();
 
+  const { data: session } = useSession();
   const [pet, setPet] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [submitLoading, setSubmitLoading] = useState(false);
-
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  
+  const [showModal, setShowModal] = useState(false);
+  const [pickupDate, setPickupDate] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchPetDetails = async () => {
-      if (!id || id === "undefined") {
-        console.error("Router error: ID parameter is missing from the URL path structure.");
-        setLoading(false);
-        return;
-      }
-
+    const fetchPetData = async () => {
       try {
-        console.log(`Fetching data from: ${baseURL}/api/pets/${id}`);
-        const response = await axios.get(`${baseURL}/api/pets/${id}`);
-        setPet(response.data);
-      } catch (error) {
-        console.error("Error retrieving pet record from backend API:", error);
-        toast.error("Could not locate this animal profile.");
+        const res = await axios.get(`https://pet-adoption-server-q5h9.onrender.com/api/pets/${petId}`);
+        setPet(res.data);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchPetDetails();
-  }, [id, baseURL]);
+    if (petId) fetchPetData();
+  }, [petId]);
 
   const handleOpenModal = () => {
-    if (!session) {
-      toast.error("You must be logged in to submit an adoption application!");
-      router.push('/login');
-      return;
+    if (!session?.user) {
+      toast.error("Please authentication log in to issue adoption parameters.");
+      return router.push('/login');
     }
-    setIsModalOpen(true);
+    if (pet.ownerEmail === session.user.email) {
+      return toast.error("Adoption Rule Violation: Shelters cannot submit applications for their own listings.");
+    }
+    setShowModal(true);
   };
 
-  const handleApplicationSubmit = async (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setSubmitLoading(true);
-
-    const applicationPayload = {
-      petId: pet._id,
-      petName: pet.petName,
-      petImage: pet.imageUrl || pet.petImage,
-      userEmail: session.user.email,
-      userName: session.user.name,
-      userPhone: phone,
-      userAddress: address,
-      status: 'pending',
-      submittedAt: new Date()
-    };
+    if (!pickupDate || !message) return toast.error("Please fill in all requested fields.");
 
     try {
-      await axios.post(`${baseURL}/api/adoption-requests`, applicationPayload);
-      toast.success(`Application for ${pet.petName} submitted successfully!`);
-      setIsModalOpen(false);
-      router.push('/my-request');
-    } catch (error) {
-      console.error("Submission error:", error);
-      toast.error("Failed to submit form.");
+      setSubmitting(true);
+      const payload = { petId: pet._id, pickupDate, message };
+      await axios.post("https://pet-adoption-server-q5h9.onrender.com/api/adoption-requests", payload, { withCredentials: true });
+      
+      toast.success("Adoption transaction processing initialized successfully!");
+      setShowModal(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Error finalizing adoption applications workflow.");
     } finally {
-      setSubmitLoading(false);
+      setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-[70vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
-      </div>
-    );
-  }
-
-  if (!pet) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-gray-500 text-lg font-medium">Pet companion profile not found.</p>
-        <p className="text-xs text-gray-400 mt-1">Debug Info - Current Route ID: Value is "{String  (id)}"</p>
-        <button onClick={() => router.push('/AllPets')} className="mt-4 bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">
-          Return to Animal Grid
-        </button>
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading profile data parameters...</div>;
+  if (!pet) return <div className="min-h-screen flex items-center justify-center text-gray-500">Pet companion record entry not found.</div>;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-5xl mx-auto px-4 py-12 min-h-screen">
       <Toaster />
-      
-      <button onClick={() => router.push('/AllPets')} className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-6 font-medium text-sm">
-        <ArrowLeft className="h-4 w-4" /> Back to listings
-      </button>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm">
-        <div className="relative h-[400px] w-full bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shadow-inner">
-          <img 
-            src={pet.imageUrl || pet.petImage} 
-            alt={pet.petName} 
-            className="w-full h-full object-cover"
-          />
+      <div className="bg-white border rounded-3xl overflow-hidden shadow-sm grid md:grid-cols-2 gap-8 p-6">
+        <div className="h-[450px] rounded-2xl overflow-hidden bg-gray-50 border">
+          <img src={pet.petImage} alt={pet.petName} className="w-full h-full object-cover" />
         </div>
-
+        
         <div className="flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">{pet.petName}</h1>
-              <span className="bg-amber-50 text-amber-700 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border border-amber-100">
-                {pet.species}
-              </span>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-extrabold text-gray-900 capitalize">{pet.petName}</h1>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full tracking-wide uppercase ${pet.adoptionStatus === 'available' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>{pet.adoptionStatus}</span>
+            </div>
+            
+            <p className="text-amber-600 font-bold text-sm mt-1 uppercase tracking-wide">{pet.breed} • {pet.species}</p>
+            
+            <div className="grid grid-cols-2 gap-2.5 my-4 bg-gray-50 p-4 rounded-xl border border-gray-100 text-xs text-gray-600">
+              <p><strong>Age:</strong> {pet.age}</p>
+              <p><strong>Gender:</strong> {pet.gender}</p>
+              <p><strong>Health Status:</strong> {pet.healthStatus}</p>
+              <p><strong>Vaccination:</strong> {pet.vaccinationStatus}</p>
+              <p><strong>Location:</strong> {pet.location}</p>
+              <p className="text-amber-700 font-bold"><strong>Adoption Fee:</strong> ${pet.adoptionFee}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 flex items-center gap-2.5">
-                <Calendar className="h-4 w-4 text-amber-500" />
-                <div>
-                  <p className="text-xs text-gray-400 font-medium">Age</p>
-                  <p className="text-sm font-bold text-gray-700">{pet.age}</p>
-                </div>
-              </div>
-              <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 flex items-center gap-2.5">
-                <MapPin className="h-4 w-4 text-amber-500" />
-                <div>
-                  <p className="text-xs text-gray-400 font-medium">Location</p>
-                  <p className="text-sm font-bold text-gray-700">{pet.location || 'Shelter'}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-sm text-gray-600 mb-4 space-y-1 bg-amber-50/30 p-3 rounded-xl border border-amber-100/50">
-              <p><strong>Breed:</strong> {pet.breed || 'Unknown'}</p>
-              <p><strong>Gender:</strong> {pet.gender || 'Not specified'}</p>
-              <p><strong>Adoption Fee:</strong> <span className="text-emerald-600 font-bold">${pet.adoptionFee}</span></p>
-            </div>
-
-            <hr className="border-gray-100 my-4" />
-
-            <div>
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Info className="h-4 w-4 text-gray-400" /> Description & Story
-              </h3>
-              <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{pet.description}</p>
+            <div className="border-t border-gray-100 pt-4">
+              <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider mb-2">Description</h3>
+              <p className="text-gray-600 text-sm leading-relaxed">{pet.description}</p>
             </div>
           </div>
 
-          <button 
-            onClick={handleOpenModal}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-xl transition-colors shadow-sm text-md mt-8 flex items-center justify-center gap-2"
-          >
-            <Heart className="h-5 w-5 fill-white" />
-            <span>Adopt {pet.petName}</span>
+          <button onClick={handleOpenModal} disabled={pet.adoptionStatus !== 'available'} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 mt-6 disabled:opacity-40">
+            <Heart className="h-5 w-5 fill-white" /> Adopt {pet.petName}
           </button>
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white max-w-md w-full rounded-2xl p-6 shadow-xl border border-gray-100 relative">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Adoption Request Form</h2>
-            <p className="text-xs text-gray-400 mb-5">Applying for <span className="font-semibold text-amber-500">{pet.petName}</span></p>
-
-            <form onSubmit={handleApplicationSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Applicant Name</label>
-                <input type="text" disabled value={session?.user?.name || ''} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 cursor-not-allowed" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Email Address</label>
-                <input type="email" disabled value={session?.user?.email || ''} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 cursor-not-allowed" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Contact Phone Number</label>
-                <input type="tel" required placeholder="017XXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Physical Living Address</label>
-                <textarea required rows="3" placeholder="Enter your full home address" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none" />
+      {/* Controlled Action Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Adoption Form Application</h2>
+            <p className="text-xs text-gray-400 mb-4">Companion Unit: <span className="text-amber-600 font-bold capitalize">{pet.petName}</span></p>
+            
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              <div className="space-y-1 bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs text-gray-500">
+                <p><strong>Applicant Name:</strong> {session?.user?.name}</p>
+                <p><strong>Applicant Email:</strong> {session?.user?.email}</p>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="w-1/2 border border-gray-200 text-gray-600 font-medium py-2.5 rounded-lg text-sm hover:bg-gray-50 transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" disabled={submitLoading} className="w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-colors flex items-center justify-center gap-1.5">
-                  {submitLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                  ) : (
-                    <>
-                      <Send className="h-3.5 w-3.5" />
-                      <span>Submit Form</span>
-                    </>
-                  )}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pickup Date Selection</label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <input type="date" required value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} className="w-full bg-white pl-10 pr-4 py-2.5 rounded-xl border text-sm text-gray-800 focus:outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Introduction Message</label>
+                <div className="relative">
+                  <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <textarea required rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Provide home layout summaries, historical experience logs..." className="w-full bg-white pl-10 pr-4 py-2.5 rounded-xl border text-sm text-gray-800 focus:outline-none" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button type="button" onClick={() => setShowModal(false)} className="border py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={submitting} className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50">
+                  {submitting ? "Processing Transaction..." : "Confirm Application"}
                 </button>
               </div>
             </form>
