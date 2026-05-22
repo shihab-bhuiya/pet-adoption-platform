@@ -1,10 +1,11 @@
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
-    // If your backend server runs on a different URL in production, 
-    // Better Auth will look at this base path to manage cookies/sessions.
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+  baseURL: "https://pet-adoption-server-q5h9.onrender.com",
+  // CRITICAL CONFIGURATION: Forces the client request mapping to pass secure cookie payloads
+  fetchOptions: {
+    credentials: "include"
+  }
 });
 
-// Export the specific hooks your UI components are calling
-export const { useSession, signIn, signOut, signUp } = authClient;
+export const { useSession, signIn, signUp, signOut, SessionProvider } = authClient;

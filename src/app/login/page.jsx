@@ -14,26 +14,34 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
 
   const handleEmailLogin = async (e) => {
-    e.preventDefault();
-    if (!email || !password) return toast.error("Please fill in all security parameter blocks.");
-
-    try {
-      setLoading(true);
-      const res = await signIn.email({
-        email,
-        password,
-        callbackURL: "/"
-      });
-      
-      toast.success("Authentication session established successfully!");
-      router.push("/");
-    } catch (err) {
-      toast.error(err.message || "Invalid authentication credentials matched on record.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  e.preventDefault();
+  try {
+    setLoading(true);
+    
+    await signIn.email({
+      email,
+      password,
+      callbackURL: "/"
+    }, {
+      onSuccess: () => {
+        toast.success("Identity session established securely!");
+        
+        // BACKUP STATE HARD TRICK: Manually set a routing marker before clearing layout caches
+        localStorage.setItem("session_active", "true");
+        
+        // Break out of stale cache pipelines by shifting windows instantly
+        window.location.replace("/");
+      },
+      onError: (ctx) => {
+        toast.error(ctx.error.message || "Invalid database matching parameters.");
+      }
+    });
+  } catch (err) {
+    toast.error("Internal processing channel failure.");
+  } finally {
+    setLoading(false);
+  }
+};
   const handleGoogleLogin = async () => {
     try {
       await signIn.social({
