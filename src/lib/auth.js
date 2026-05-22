@@ -12,14 +12,15 @@ const auth = betterAuth({
     emailAndPassword: {
         enabled: true // Enables standard signup/login with email + password
     },
-      emailAndPassword: { 
-    enabled: true, 
-  }, 
+   trustedOrigins: [
+        "http://localhost:3000", 
+        "https://your-vercel-frontend-url.vercel.app"
+    ],
 
     socialProviders: {
         google: {
-            clientId: process.env.GOOGLE_CLIENT_ID || "",
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET || ""
+            clientId: process.env.GOOGLE_CLIENT_ID ,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET 
         }
     },
     // Used to sign session cookies securely

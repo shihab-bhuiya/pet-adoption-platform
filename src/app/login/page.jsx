@@ -1,127 +1,168 @@
 "use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { signIn } from '@/lib/auth-client';
-import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
+import { authClient } from "../../lib/auth-client";
+import Link from "next/link";
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { FaGoogle, FaGithub } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 const LoginPage = () => {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isShowPassword, setIsShowPassword] = useState(false);
 
-  const handleEmailLogin = async (e) => {
-  e.preventDefault();
-  try {
-    setLoading(true);
-    
-    await signIn.email({
-      email,
-      password,
-      callbackURL: "/"
-    }, {
-      onSuccess: () => {
-        toast.success("Identity session established securely!");
-        
-        // BACKUP STATE HARD TRICK: Manually set a routing marker before clearing layout caches
-        localStorage.setItem("session_active", "true");
-        
-        // Break out of stale cache pipelines by shifting windows instantly
-        window.location.replace("/");
-      },
-      onError: (ctx) => {
-        toast.error(ctx.error.message || "Invalid database matching parameters.");
-      }
-    });
-  } catch (err) {
-    toast.error("Internal processing channel failure.");
-  } finally {
-    setLoading(false);
-  }
-};
-  const handleGoogleLogin = async () => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
+  const handleLoginFun = async (datum) => {
+    const { email, password } = datum;
+
     try {
-      await signIn.social({
+      const res = await authClient.signIn.email({
+        email,
+        password,
+        rememberMe: true,
+        callbackURL: "/",
+      });
+
+      console.log("LOGIN RESPONSE:", res);
+
+      // 1. Check if better-auth returned an error inside the response object
+      if (res?.error || res?.data?.error) {
+        toast.error(res?.error?.message || "Invalid credentials matched.");
+        return;
+      }
+
+      toast.success("Logged in successfully!");
+
+      // 2. CRITICAL FIX: Forces the navbar state listeners to mount layout updates instantly
+      window.location.replace("/");
+
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err?.message || "Invalid credentials or server error"
+      );
+    }
+  };
+
+  const signInGoogle = async () => {
+    try {
+      await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/"
+        callbackURL: "/",
       });
     } catch (err) {
-      toast.error("Social authentication handshake failed.");
+      toast.error("Google Authentication failed");
+    }
+  };
+
+  const signInGithub = async () => {
+    try {
+      await authClient.signIn.social({
+        provider: "github",
+        callbackURL: "/",
+      });
+    } catch (err) {
+      toast.error("GitHub Authentication failed");
     }
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-white px-4">
-      <Toaster />
-      <div className="bg-white border rounded-2xl max-w-sm w-full p-6 shadow-sm text-xs">
-        <div className="text-center mb-6">
-          <div className="h-10 w-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 mx-auto mb-2 border border-amber-100">
-            <LogIn className="h-5 w-5" />
-          </div>
-          <h1 className="text-lg font-extrabold text-gray-900">Welcome Back</h1>
-          <p className="text-gray-400 mt-1">Provide your entry credentials to unlock private profile layers.</p>
-        </div>
+    <div className="container mx-auto min-h-screen flex items-center justify-center bg-gray-200 py-10">
+      <div className="bg-white w-full max-w-md p-8 rounded-md shadow">
+        <h2 className="text-center text-2xl font-semibold mb-6">
+          Login your account
+        </h2>
 
-        <form onSubmit={handleEmailLogin} className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit(handleLoginFun)}>
+          {/* Email */}
           <div>
-            <label className="block font-bold text-gray-500 uppercase mb-1">Email Address</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <input 
-                type="email" 
-                required 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                placeholder="developer@example.com" 
-                className="w-full bg-white pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none" 
-              />
-            </div>
+            <label className="block text-sm font-medium mb-1 text-gray-700">
+              Email address
+            </label>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              {...register("email", {
+                required: "Email is required",
+              })}
+              className="w-full px-3 py-2 border rounded bg-gray-100 text-sm"
+            />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
-          <div>
-            <label className="block font-bold text-gray-500 uppercase mb-1">Account Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <input 
-                type="password" 
-                required 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                placeholder="••••••••" 
-                className="w-full bg-white pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none" 
-              />
-            </div>
+          {/* Password */}
+          <div className="relative">
+            <label className="block text-sm font-medium mb-1 text-gray-700">
+              Password
+            </label>
+            <input
+              type={isShowPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              {...register("password", {
+                required: "Password is required",
+              })}
+              className="w-full px-3 py-2 border rounded bg-gray-100 text-sm pr-12"
+            />
+
+            <span
+              className="absolute right-3 bottom-2.5 text-xs cursor-pointer select-none text-gray-500 hover:text-gray-800"
+              onClick={() => setIsShowPassword(!isShowPassword)}
+            >
+              {isShowPassword ? "Hide" : "Show"}
+            </span>
+
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
-          <button 
-            type="submit" 
-            disabled={loading} 
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors text-xs disabled:opacity-50"
+          {/* Submit */}
+          <button
+            type="submit"
+            className="w-full bg-gray-800 text-white py-2.5 rounded font-semibold hover:bg-gray-900 transition"
           >
-            {loading ? "Verifying Credentials..." : "Sign In to ForeverHome"}
+            Login
           </button>
         </form>
 
-        <div className="relative my-5 text-center">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
-          <span className="relative bg-white px-3 text-[10px] uppercase font-bold text-gray-400 tracking-wider">Or Framework Bridges</span>
-        </div>
-
-        {/* Mandatory Google Login Element */}
-        <button 
-          onClick={handleGoogleLogin} 
-          className="w-full border hover:bg-gray-50 text-gray-700 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors"
-        >
-          <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google logo asset" className="h-4 w-4" />
-          Continue with Google Engine
-        </button>
-
-        <p className="text-center text-gray-400 mt-6 font-medium">
-          New to the platform? <Link href="/register" className="text-amber-600 font-bold hover:underline">Register Account Here</Link>
+        {/* Footer */}
+        <p className="text-center text-sm mt-5 text-gray-600">
+          Don’t Have An Account?{" "}
+          <Link href="/registation">
+            <span className="text-amber-500 font-semibold hover:underline">
+              Register
+            </span>
+          </Link>
         </p>
+
+        {/* Social Login */}
+        <div className="flex flex-col gap-2.5 mt-6 text-sm font-medium">
+          <button
+            type="button"
+            onClick={signInGoogle}
+            className="flex items-center justify-center gap-2 border py-2.5 rounded hover:bg-gray-50 transition shadow-sm text-gray-700"
+          >
+            <FaGoogle className="text-red-500" /> Google
+          </button>
+
+          <button
+            type="button"
+            onClick={signInGithub}
+            className="flex items-center justify-center gap-2 border py-2.5 rounded hover:bg-gray-50 transition shadow-sm text-gray-700"
+          >
+            <FaGithub /> GitHub
+          </button>
+        </div>
       </div>
     </div>
   );
