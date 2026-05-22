@@ -1,113 +1,84 @@
+"use client";
+
 import React from 'react';
 import Link from 'next/link';
-import PetCard from '@/components/PetCards';
-import { Heart, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, ShieldCheck, Heart, Sparkles, Smile } from 'lucide-react';
 
-// Since this is a home page dashboard entry, we can fetch the initial 
-// featured pets directly using Next.js Server Side fetching architecture!
-async function getFeaturedPets() {
-  try {
-    const res = await fetch('http://localhost:5000/api/pets', { cache: 'no-store' });
-    if (!res.ok) throw new Error('Failed to fetch data');
-    const data = await res.json();
-    // Slice out a minimum of 6 pets to fulfill your assignment specification rule
-    return data.slice(0, 6);
-  } catch (error) {
-    console.error("Error loading homepage featured profiles:", error);
-    return [];
-  }
-}
-
-export default async function HomePage() {
-  const featuredPets = await getFeaturedPets();
-
+const HomePage = () => {
   return (
-    <div className="w-full">
-      
-      {/* 1. HERO BANNER SECTION */}
-      <section className="relative bg-gradient-to-r from-amber-500 to-orange-600 text-white py-24 px-4 sm:px-6 lg:px-8 shadow-inner">
-        <div className="max-w-5xl mx-auto text-center">
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight drop-shadow-sm animate-fade-in">
-            Finding Forever Homes <br className="hidden sm:inline" /> For Incredible Pets
-          </h1>
-          <p className="mt-6 text-lg sm:text-xl max-w-3xl mx-auto text-amber-50 opacity-90 leading-relaxed">
-            Every animal deserves a life filled with security, health, and endless love. Browse our certified listings today and meet your match.
-          </p>
-          <div className="mt-10 flex justify-center gap-4">
-            <Link 
-              href="/AllPets" 
-              className="bg-white text-orange-600 font-bold px-8 py-3.5 rounded-xl shadow-md hover:bg-amber-50 transition-all duration-200 flex items-center gap-2 transform hover:-translate-y-0.5"
-            >
-              <span>Adopt Now</span>
-              <ArrowRight className="h-5 w-5" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. DYNAMIC FEATURED PETS SECTION (Min 6 Pets Required) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
-          <div>
-            <span className="text-amber-600 text-sm font-bold uppercase tracking-widest block mb-2">Ready for Adoption</span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Featured Companions</h2>
-          </div>
-          <Link href="/AllPets" className="text-amber-500 font-semibold hover:text-amber-600 transition-colors mt-2 md:mt-0 flex items-center gap-1">
-            <span>View All Available Pets</span>
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        {featuredPets.length === 0 ? (
-          <p className="text-center text-gray-500 py-10">No featured companions loaded at the moment. Check your database collection link!</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredPets.map((pet) => (
-              /* Notice how we pass down the 'pet' object prop cleanly here! */
-              <PetCard key={pet._id} pet={pet} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 3. EXTRA STATIC SECTIONS (Why Adopt Pets & Pet Care Tips) */}
-      <section className="bg-gray-100 border-t border-b border-gray-200/50 py-20 px-4">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          
-          {/* Section A: Why Adopt Pets */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200/40">
-            <div className="bg-amber-100 p-3 rounded-xl w-fit text-amber-600 mb-5">
-              <Heart className="h-6 w-6 fill-amber-600" />
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Why Adopt Instead of Buy?</h3>
-            <p className="text-gray-600 leading-relaxed text-sm mb-4">
-              Adopting gives a second chance to animals who have lost their homes through no fault of their own. It directly counters unethical commercial breeding mills while saving an innocent life.
+    <div className="min-h-screen bg-white overflow-hidden">
+      {/* Banner/Hero Section */}
+      <section className="relative bg-gradient-to-b from-amber-50/60 to-white py-20 px-4">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
+            <span className="text-amber-600 font-bold tracking-wider uppercase text-xs bg-amber-100/60 px-3 py-1 rounded-full">Save a Life Today</span>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mt-4 leading-tight">
+              Unconditional Love <br />Is Waiting For You
+            </h1>
+            <p className="text-gray-500 text-base mt-4 leading-relaxed max-w-md">
+              Every companion pet listed in our database comes from active local non-profit shelters seeking real family safe havens. Give them a beautiful home.
             </p>
-            <ul className="space-y-2.5 text-sm font-medium text-gray-700">
-              <li className="flex items-center gap-2 text-emerald-600">✓ Saves a vulnerable life instantly</li>
-              <li className="flex items-center gap-2 text-emerald-600">✓ Pets come behaviorally assessed and vetted</li>
-              <li className="flex items-center gap-2 text-emerald-600">✓ Breaks the supply chain of commercial puppy mills</li>
-            </ul>
-          </div>
-
-          {/* Section B: Pet Care Tips */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200/40">
-            <div className="bg-amber-100 p-3 rounded-xl w-fit text-amber-600 mb-5">
-              <ShieldCheck className="h-6 w-6" />
+            <div className="mt-8">
+              <Link href="/AllPets" className="inline-flex items-center gap-2 text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 py-3.5 rounded-xl transition-all shadow-md shadow-amber-500/10">
+                Adopt Now <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Essential New Pet Care Tips</h3>
-            <p className="text-gray-600 leading-relaxed text-sm mb-4">
-              Transitioning to a new household environment takes patience and a proper structure. Follow these baseline rules to ensure your new companion adapts peacefully:
-            </p>
-            <ul className="space-y-3 text-sm text-gray-600">
-              <li><strong>1. The 3-3-3 Rule:</strong> Expect 3 days to decompress, 3 weeks to learn routines, and 3 months to feel completely safe and secure in your home.</li>
-              <li><strong>2. Consistent Scheduling:</strong> Keep feeding times, bathroom break walks, and bedtimes identical to prevent anxiety spikes.</li>
-            </ul>
-          </div>
-
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="relative h-96 rounded-3xl overflow-hidden shadow-lg border">
+            <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=1000" alt="Happy dog banner asset" className="w-full h-full object-cover" />
+          </motion.div>
         </div>
       </section>
 
+      {/* Static Section 1: Why Adopt */}
+      <section className="py-16 max-w-6xl mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl font-bold text-gray-900">Why Adopt Instead of Shop?</h2>
+          <p className="text-sm text-gray-400 mt-1">Understanding the true lifetime social impact of adopting local animals.</p>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-6">
+          <div className="p-6 border border-gray-100 rounded-2xl bg-gray-50/50">
+            <div className="h-10 w-10 bg-amber-500 rounded-xl flex items-center justify-center text-white mb-4"><Heart className="h-5 w-5" /></div>
+            <h3 className="font-bold text-gray-800 text-base mb-2">Save a Vital Life</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">Shelter spaces are highly restricted. Adopting opens up a pipeline spot for another stray in urgent need.</p>
+          </div>
+          <div className="p-6 border border-gray-100 rounded-2xl bg-gray-50/50">
+            <div className="h-10 w-10 bg-amber-500 rounded-xl flex items-center justify-center text-white mb-4"><ShieldCheck className="h-5 w-5" /></div>
+            <h3 className="font-bold text-gray-800 text-base mb-2">Fully Vaccinated</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">Our companion animals go through intense baseline physical checkups and behavioral verification charts before listing.</p>
+          </div>
+          <div className="p-6 border border-gray-100 rounded-2xl bg-gray-50/50">
+            <div className="h-10 w-10 bg-amber-500 rounded-xl flex items-center justify-center text-white mb-4"><Sparkles className="h-5 w-5" /></div>
+            <h3 className="font-bold text-gray-800 text-base mb-2">Fight Commercial Mills</h3>
+            <p className="text-xs text-gray-500 leading-relaxed">Adoption directly reduces commercial funding paths going towards inhumane backyard breeding networks.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Static Section 2: Success Stories */}
+      <section className="py-16 bg-gray-50 border-y border-gray-100 px-4">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">Success Adoption Stories</h2>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              "We found Max on ForeverHome last year. The processing timeline request was highly structured and fluid. His playful spirit has transformed our entire home environment. We match his daily life logs to the shelter guidelines perfectly!"
+            </p>
+            <div className="flex items-center gap-3 pt-2">
+              <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center font-bold text-white"><Smile /></div>
+              <div>
+                <h4 className="text-sm font-bold text-gray-800">The Bhuiya Family</h4>
+                <p className="text-xs text-gray-400">Adopted Max (Golden Retriever Mix)</p>
+              </div>
+            </div>
+          </div>
+          <div className="h-72 rounded-2xl overflow-hidden border">
+            <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=1000" alt="Happy family adopt story asset" className="w-full h-full object-cover" />
+          </div>
+        </div>
+      </section>
     </div>
   );
-}
+};
+
+export default HomePage;
