@@ -1,152 +1,124 @@
 "use client";
 
 import React, { useState } from 'react';
-import { signUp } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Mail, Lock, PawPrint } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { signUp } from '@/lib/auth-client';
+import { UserPlus, User, Mail, Lock, Image } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 const RegisterPage = () => {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [form, setForm] = useState({ name: "", email: "", photoUrl: "", password: "", confirmPassword: "" });
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async (e) => {
+  const handleInputChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const validatePasswordStructure = (pass) => {
+    if (pass.length < 6) return "Password configuration must span minimum 6 character marks.";
+    if (!/[A-Z]/.test(pass)) return "Password validation requires at least one uppercase alphabetic character.";
+    if (!/[a-z]/.test(pass)) return "Password validation requires at least one lowercase alphabetic character.";
+    return null;
+  };
+
+  const handleRegistrationSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    const { name, email, photoUrl, password, confirmPassword } = form;
+
+    if (!name || !email || !photoUrl || !password || !confirmPassword) {
+      return toast.error("Please fulfill all identity data blocks.");
+    }
+
+    // Enforces requested standard password validation rules
+    const passwordError = validatePasswordStructure(password);
+    if (passwordError) return toast.error(passwordError);
+
+    if (password !== confirmPassword) {
+      return toast.error("Password string mismatch. Match inputs exactly.");
+    }
 
     try {
-      // Execute Better Auth signup transaction
+      setLoading(true);
       await signUp.email({
-        email: email,
-        password: password,
-        name: name,
-        callbackURL: '/' 
-      }, {
-        // Prevents Better Auth from instantly executing window relocation before toast displays
-        onRequest: () => {
-          setLoading(true);
-        },
-        onSuccess: () => {
-          toast.success("Account created successfully! Welcome to the pack.");
-          setName('');
-          setEmail('');
-          setPassword('');
-          // Delays routing slightly so the user can read the success toast notification
-          setTimeout(() => {
-            router.push('/login');
-          }, 1500);
-        },
-        onError: (ctx) => {
-          toast.error(ctx.error.message || "Failed to create account. Please try again.");
-          setLoading(false);
-        }
+        email,
+        password,
+        name,
+        image: photoUrl,
+        callbackURL: "/login"
       });
 
-    } catch (error) {
-      console.error("Registration pipeline error:", error);
-      toast.error("An unexpected error occurred during profile registration.");
+      toast.success("Identity profile compiled successfully! Redirecting onto entry checkpoint...");
+      router.push("/login");
+    } catch (err) {
+      toast.error(err.message || "Registration runtime error encountered.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-gray-50/50 px-4 py-12">
-      <Toaster position="top-center" reverseOrder={false} />
-      
-      <div className="max-w-md w-full bg-white border border-gray-100 rounded-2xl p-8 shadow-sm">
-        
-        {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="h-12 w-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mx-auto mb-3">
-            <PawPrint className="h-6 w-6" />
+    <div className="min-h-[85vh] flex items-center justify-center bg-white px-4 py-8">
+      <Toaster />
+      <div className="bg-white border rounded-2xl max-w-sm w-full p-6 shadow-sm text-xs">
+        <div className="text-center mb-6">
+          <div className="h-10 w-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 mx-auto mb-2 border border-amber-100">
+            <UserPlus className="h-5 w-5" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Create an Account</h2>
-          <p className="text-sm text-gray-400 mt-1">Join our community and meet your new best friend.</p>
+          <h1 className="text-lg font-extrabold text-gray-900">Create Platform Profile</h1>
+          <p className="text-gray-400 mt-1">Register your profile data maps to list or adopt animals.</p>
         </div>
 
-        {/* Signup Form */}
-        <form onSubmit={handleRegister} className="space-y-5">
-          {/* Input field: Name */}
+        <form onSubmit={handleRegistrationSubmit} className="space-y-3.5">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Full Name</label>
+            <label className="block font-bold text-gray-500 uppercase mb-1">Full Name</label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center left-3 text-gray-400">
-                <User className="h-4 w-4" />
-              </span>
-              <input 
-                type="text" 
-                required
-                placeholder="Shihab Bhuiya"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-shadow"
-              />
+              <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <input type="text" required name="name" value={form.name} onChange={handleInputChange} placeholder="Alex Bhuiya" className="w-full bg-white pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none" />
             </div>
           </div>
 
-          {/* Input field: Email */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Email Address</label>
+            <label className="block font-bold text-gray-500 uppercase mb-1">Email Address</label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center left-3 text-gray-400">
-                <Mail className="h-4 w-4" />
-              </span>
-              <input 
-                type="email" 
-                required
-                placeholder="shihab@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-shadow"
-              />
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <input type="email" required name="email" value={form.email} onChange={handleInputChange} placeholder="alex@domain.com" className="w-full bg-white pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none" />
             </div>
           </div>
 
-          {/* Input field: Password */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Password</label>
+            <label className="block font-bold text-gray-500 uppercase mb-1">Avatar Profile Photo URL</label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center left-3 text-gray-400">
-                <Lock className="h-4 w-4" />
-              </span>
-              <input 
-                type="password" 
-                required
-                minLength={6}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-shadow"
-              />
+              <Image className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <input type="url" required name="photoUrl" value={form.photoUrl} onChange={handleInputChange} placeholder="https://imgbb.com/avatar.jpg" className="w-full bg-white pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none" />
             </div>
           </div>
 
-          {/* Submit Registration Button */}
-          <button 
-            type="submit"
-            disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors shadow-sm text-sm disabled:opacity-50 flex items-center justify-center"
-          >
-            {loading ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-            ) : (
-              "Sign Up"
-            )}
+          <div>
+            <label className="block font-bold text-gray-500 uppercase mb-1">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <input type="password" required name="password" value={form.password} onChange={handleInputChange} placeholder="🔒 Min 6 chars, A-Z, a-z" className="w-full bg-white pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-gray-500 uppercase mb-1">Confirm Identity Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <input type="password" required name="confirmPassword" value={form.confirmPassword} onChange={handleInputChange} placeholder="••••••••" className="w-full bg-white pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none" />
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-colors text-xs disabled:opacity-50 mt-2">
+            {loading ? "Compiling Master Records..." : "Complete System Registration"}
           </button>
         </form>
 
-        {/* Sign In Navigation Link Redirect */}
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Already have an account?{' '}
-          <Link href="/login" className="text-amber-500 hover:underline font-medium">
-            Sign In
-          </Link>
+        <p className="text-center text-gray-400 mt-6 font-medium">
+          Already registered on record? <Link href="/login" className="text-amber-600 font-bold hover:underline">Log In Instead</Link>
         </p>
-
       </div>
     </div>
   );
