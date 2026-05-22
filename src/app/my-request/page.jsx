@@ -13,22 +13,12 @@ const MyRequestsPage = () => {
 
   useEffect(() => {
     const fetchMyRequests = async () => {
-      // Don't attempt to fetch until the Better Auth session is loaded
       if (authPending || !session?.user) return;
-
       try {
-        // Pointing to your production backend API on Render
-        const baseURL = "https://pet-adoption-server-q5h9.onrender.com";
-        
-        // Better Auth uses cookies/headers, so pass credentials true
-        const response = await axios.get(`${baseURL}/api/my-adoption-requests`, {
-          withCredentials: true,
-        });
-        
+        const response = await axios.get("https://pet-adoption-server-q5h9.onrender.com/api/my-adoption-requests", { withCredentials: true });
         setRequests(response.data);
       } catch (error) {
-        console.error("Error fetching requests:", error);
-        toast.error("Could not load your adoption applications history.");
+        toast.error("Could not load application history.");
       } finally {
         setLoading(false);
       }
@@ -38,13 +28,10 @@ const MyRequestsPage = () => {
       if (session?.user) {
         fetchMyRequests();
       } else {
-        // ONLY update state if it hasn't been set to false yet to avoid cascading renders
-        if (loading) {
-          setLoading(false);
-        }
+        if (loading) setLoading(false);
       }
     }
-  }, [session, authPending, loading]); // Clean, unified dependency array footer
+  }, [session, authPending, loading]);
 
   if (authPending || loading) {
     return (
@@ -65,49 +52,36 @@ const MyRequestsPage = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
+    <div className="max-w-5xl mx-auto px-4 py-10 min-h-screen">
       <Toaster />
       <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-        <PawPrint className="h-6 w-6 text-amber-500" />
-        My Adoption Requests
+        <PawPrint className="h-6 w-6 text-amber-500" /> My Adoption Requests
       </h1>
-      <p className="text-sm text-gray-500 mb-8">Track the status of your pet companion applications.</p>
+      <p className="text-sm text-gray-500 mb-8">Track the live status of your pet companion applications.</p>
 
       {requests.length === 0 ? (
-        <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center shadow-sm">
-          <p className="text-gray-400 font-medium">You haven't submitted any adoption requests yet.</p>
+        <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center shadow-sm text-gray-400 font-medium">
+          You haven't submitted any adoption requests yet.
         </div>
       ) : (
         <div className="grid gap-4">
           {requests.map((req) => (
             <div key={req._id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                {req.petImage && (
-                  <img src={req.petImage} alt={req.petName} className="h-14 w-14 rounded-xl object-cover border border-gray-100" />
-                )}
+                <img src={req.petImage || "/placeholder-pet.png"} alt={req.petName} className="h-14 w-14 rounded-xl object-cover border" />
                 <div>
-                  <h3 className="font-bold text-gray-800 text-base">{req.petName}</h3>
+                  <h3 className="font-bold text-gray-800 text-base capitalize">{req.petName}</h3>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400 mt-1">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {req.submittedAt ? new Date(req.submittedAt).toLocaleDateString() : 'N/A'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      Status: <span className="capitalize font-semibold text-amber-600">{req.status}</span>
-                    </span>
+                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {req.submittedAt ? new Date(req.submittedAt).toLocaleDateString() : 'N/A'}</span>
+                    <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Status: <span className="capitalize font-semibold text-amber-600">{req.status}</span></span>
                   </div>
                 </div>
               </div>
-              
               <div>
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wide ${
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold tracking-wide capitalize ${
                   req.status === 'approved' ? 'bg-green-50 text-green-700 border border-green-100' :
-                  req.status === 'rejected' ? 'bg-red-50 text-red-700 border border-red-100' :
-                  'bg-amber-50 text-amber-700 border border-amber-100'
-                }`}>
-                  {req.status}
-                </span>
+                  req.status === 'rejected' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
+                }`}>{req.status}</span>
               </div>
             </div>
           ))}
